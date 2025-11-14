@@ -520,23 +520,21 @@
         </div>
     </div>
  
-    <script>
+        <script>
         class AIAssistant {
             constructor() {
                 this.isOpen = false;
                 this.isMuted = true;
                 this.isListening = false;
-                this.isSpeaking = false;
                 this.voices = [];
                 this.selectedVoice = null;
                 this.recognition = null;
-                this.currentUtterance = null;
-                this.speechMonitor = null;
                 this.apiUrl = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
  
                 this.initElements();
                 this.initEventListeners();
-                this.initSpeechSynthesis();
+                // Initialize TTS on first user interaction
+                document.addEventListener('click', () => this.initSpeechSynthesis(), { once: true });
                 this.initSpeechRecognition();
             }
  
@@ -570,133 +568,87 @@
                 this.micBtn.addEventListener('click', () => this.toggleVoiceInput());
  
                 this.voiceSelect.addEventListener('change', (e) => {
-                    const index = parseInt(e.target.value);
-                    this.selectedVoice = this.voices[index];
-                    console.log('Selected voice:', this.selectedVoice?.name);
+                    this.selectedVoice = this.voices[e.target.value];
                 });
  
                 document.querySelectorAll('.suggestion-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        const msg = btn.getAttribute('data-msg');
-                        this.input.value = msg;
+                        this.input.value = btn.getAttribute('data-msg');
                         this.sendMessage();
                     });
                 });
             }
  
             initSpeechSynthesis() {
-                console.log('Initializing speech synthesis...');
- 
+                if (!window.speechSynthesis) return;
+                
                 const loadVoices = () => {
                     const allVoices = window.speechSynthesis.getVoices();
-                    console.log('Total voices found:', allVoices.length);
- 
                     if (allVoices.length > 0) {
                         this.voices = allVoices.filter(v => v.lang.includes('en'));
- 
-                        if (this.voices.length === 0) {
-                            this.voices = allVoices;
-                        }
- 
-                        console.log('Using voices:', this.voices.length);
- 
+                        if (this.voices.length === 0) this.voices = allVoices;
+                        
                         this.voiceSelect.innerHTML = this.voices.map((v, i) =>
                             `<option value="${i}">${v.name} (${v.lang})</option>`
                         ).join('');
- 
+                        
                         this.selectedVoice = this.voices[0];
-                        console.log('Default voice set:', this.selectedVoice?.name);
+                        console.log('Voices loaded:', this.voices.length);
                     }
                 };
  
-                if (window.speechSynthesis) {
-                    loadVoices();
-                    window.speechSynthesis.onvoiceschanged = loadVoices;
-                    setTimeout(loadVoices, 100);
-                    setTimeout(loadVoices, 500);
-                    setTimeout(loadVoices, 1000);
-                }
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+                loadVoices();
+                setTimeout(loadVoices, 100);
+                setTimeout(loadVoices, 500);
             }
  
             initSpeechRecognition() {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
- 
-                if (SpeechRecognition) {
-                    this.recognition = new SpeechRecognition();
-                    this.recognition.continuous = false;
-                    this.recognition.interimResults = false;
-                    this.recognition.lang = 'en-US';
- 
-                    this.recognition.onstart = () => {
-                        console.log('Speech recognition started');
-                        this.isListening = true;
-                        this.micBtn.classList.add('active');
-                    };
- 
-                    this.recognition.onresult = (event) => {
-                        const transcript = event.results[0][0].transcript;
-                        console.log('Recognized:', transcript);
-                        this.input.value = transcript;
-                        this.sendMessage();
-                    };
- 
-                    this.recognition.onend = () => {
-                        console.log('Speech recognition ended');
-                        this.isListening = false;
-                        this.micBtn.classList.remove('active');
-                    };
- 
-                    this.recognition.onerror = (event) => {
-                        console.error('Speech recognition error:', event.error);
-                        this.isListening = false;
-                        this.micBtn.classList.remove('active');
-                    };
-                } else {
-                    console.warn('Speech recognition not supported');
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SR) {
                     this.micBtn.style.display = 'none';
+                    return;
                 }
+                
+                this.recognition = new SR();
+                this.recognition.lang = 'en-US';
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    this.micBtn.classList.add('active');
+                };
+                this.recognition.onresult = (e) => {
+                    this.input.value = e.results[0][0].transcript;
+                    this.sendMessage();
+                };
+                this.recognition.onend = () => {
+                    this.isListening = false;
+                    this.micBtn.classList.remove('active');
+                };
             }
  
             toggle() {
                 this.isOpen = !this.isOpen;
                 this.container.classList.toggle('active');
-                if (this.isOpen) {
-                    setTimeout(() => this.input.focus(), 100);
-                }
+                if (this.isOpen) setTimeout(() => this.input.focus(), 100);
             }
  
             toggleMute() {
                 this.isMuted = !this.isMuted;
-                if (this.isMuted) {
-                    this.muteBtn.innerHTML = '🔇 Muted';
-                    this.muteBtn.classList.remove('active');
-                    if (window.speechSynthesis.speaking) {
-                        window.speechSynthesis.cancel();
-                        this.stopAvatar();
-                        this.isSpeaking = false;
-                        if (this.speechMonitor) {
-                            clearInterval(this.speechMonitor);
-                            this.speechMonitor = null;
-                        }
-                    }
-                } else {
-                    this.muteBtn.innerHTML = '🔊 Speaking';
-                    this.muteBtn.classList.add('active');
+                this.muteBtn.innerHTML = this.isMuted ? '🔇 Muted' : '🔊 Speaking';
+                this.muteBtn.classList.toggle('active', !this.isMuted);
+                
+                if (this.isMuted && window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    this.stopAvatar();
                 }
-                console.log('Mute toggled:', this.isMuted);
             }
  
             toggleVoiceInput() {
                 if (!this.recognition) {
-                    alert('Voice input not supported in this browser');
+                    alert('Voice input not supported');
                     return;
                 }
- 
-                if (this.isListening) {
-                    this.recognition.stop();
-                } else {
-                    this.recognition.start();
-                }
+                this.isListening ? this.recognition.stop() : this.recognition.start();
             }
  
             async sendMessage() {
@@ -709,36 +661,27 @@
                 this.addMessage(text, true);
                 this.input.value = '';
                 this.sendBtn.disabled = true;
- 
                 this.showTyping();
  
                 try {
                     const response = await fetch(this.apiUrl, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'creepy': '1234'
-                        },
+                        headers: { 'Content-Type': 'application/json', 'creepy': '1234' },
                         body: JSON.stringify({ message: text })
                     });
  
                     if (!response.ok) throw new Error('API error');
- 
                     const data = await response.json();
                     this.removeTyping();
  
-                    if (data && data.output) {
+                    if (data?.output) {
                         const reply = data.output.trim();
                         this.addMessage(reply, false);
- 
-                        if (!this.isMuted) {
-                            setTimeout(() => this.speak(reply), 200);
-                        }
+                        if (!this.isMuted) setTimeout(() => this.speak(reply), 200);
                     }
                 } catch (error) {
-                    console.error('API error:', error);
                     this.removeTyping();
-                    this.addMessage('Sorry, I encountered an error. Please try again.', false);
+                    this.addMessage('Sorry, I encountered an error.', false);
                 } finally {
                     this.sendBtn.disabled = false;
                 }
@@ -747,146 +690,98 @@
             addMessage(text, isUser = false) {
                 const msg = document.createElement('div');
                 msg.className = 'message' + (isUser ? ' user' : '');
- 
                 const bubble = document.createElement('div');
                 bubble.className = 'message-bubble';
                 bubble.textContent = text;
- 
                 msg.appendChild(bubble);
                 this.messages.appendChild(msg);
-                this.scrollToBottom();
+                this.messages.scrollTop = this.messages.scrollHeight;
             }
  
             showTyping() {
                 const typing = document.createElement('div');
                 typing.className = 'message typing-msg';
-                typing.innerHTML = `
-                    <div class="typing">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-                `;
+                typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
                 this.messages.appendChild(typing);
-                this.scrollToBottom();
+                this.messages.scrollTop = this.messages.scrollHeight;
             }
  
             removeTyping() {
-                const typing = this.messages.querySelector('.typing-msg');
-                if (typing) typing.remove();
+                const t = this.messages.querySelector('.typing-msg');
+                if (t) t.remove();
             }
  
             stripMarkdown(text) {
                 return text
                     .replace(/https?:\/\/[^\s]+/g, '')
                     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-                    .replace(/[\*_]{1,3}(.+?)[\*_]{1,3}/g, '$1')
-                    .replace(/``````/g, '')
-                    .replace(/`([^`]+)`/g, '$1')
-                    .replace(/^#{1,6}\s+/gm, '')
-                    .replace(/^[\-\*\+]\s+/gm, '')
+                    .replace(/[*_`~>#-]+/g, ' ')
                     .replace(/\s+/g, ' ')
                     .trim();
             }
  
             speak(text) {
-                if (!window.speechSynthesis) {
-                    console.error('Speech synthesis not supported');
-                    return;
-                }
- 
-                const cleanText = this.stripMarkdown(text);
-                console.log('Speaking:', cleanText);
- 
-                window.speechSynthesis.cancel();
+                if (!window.speechSynthesis) return;
                 
-                if (this.speechMonitor) {
-                    clearInterval(this.speechMonitor);
-                    this.speechMonitor = null;
-                }
+                const cleanText = this.stripMarkdown(text);
+                window.speechSynthesis.cancel();
  
-                setTimeout(() => {
-                    const utterance = new SpeechSynthesisUtterance(cleanText);
-                    this.currentUtterance = utterance;
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                if (this.selectedVoice) utterance.voice = this.selectedVoice;
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
  
-                    if (this.selectedVoice) {
-                        utterance.voice = this.selectedVoice;
-                        console.log('Using voice:', this.selectedVoice.name);
-                    }
+                utterance.onstart = () => {
+                    console.log('Speech started');
+                    this.startAvatar();
+                };
  
-                    utterance.rate = 1.0;
-                    utterance.pitch = 1.0;
-                    utterance.volume = 1.0;
+                utterance.onend = () => {
+                    console.log('Speech ended');
+                    this.stopAvatar();
+                };
  
-                    utterance.onstart = () => {
-                        console.log('Speech started');
-                        this.isSpeaking = true;
-                        this.startAvatar();
-                    };
+                utterance.onerror = () => {
+                    console.log('Speech error');
+                    this.stopAvatar();
+                };
  
-                    utterance.onend = () => {
-                        console.log('Speech ended');
-                        this.isSpeaking = false;
-                        this.stopAvatar();
-                        if (this.speechMonitor) {
-                            clearInterval(this.speechMonitor);
-                            this.speechMonitor = null;
-                        }
-                    };
- 
-                    utterance.onerror = (event) => {
-                        console.error('Speech error:', event.error);
-                        this.isSpeaking = false;
-                        this.stopAvatar();
-                        if (this.speechMonitor) {
-                            clearInterval(this.speechMonitor);
-                            this.speechMonitor = null;
-                        }
-                    };
- 
-                    window.speechSynthesis.speak(utterance);
-                    
-                    this.speechMonitor = setInterval(() => {
-                        if (window.speechSynthesis.speaking && !this.isSpeaking) {
-                            console.log('Speech detected - starting avatar');
-                            this.isSpeaking = true;
-                            this.startAvatar();
-                        } else if (!window.speechSynthesis.speaking && this.isSpeaking) {
-                            console.log('Speech ended - stopping avatar');
-                            this.isSpeaking = false;
-                            this.stopAvatar();
-                            clearInterval(this.speechMonitor);
-                            this.speechMonitor = null;
-                        }
-                    }, 100);
- 
-                }, 100);
+                window.speechSynthesis.speak(utterance);
             }
  
             startAvatar() {
-                console.log('Starting avatar animation');
-                if (this.avatarWrapper) {
-                    this.avatarWrapper.classList.add('speaking');
-                }
-                if (this.avatarLottie && typeof this.avatarLottie.play === 'function') {
-                    this.avatarLottie.play();
-                    console.log('Lottie animation started');
+                this.avatarWrapper?.classList.add('speaking');
+                if (this.avatarLottie) {
+                    try {
+                        // Wait for dotlottie to be ready
+                        setTimeout(() => {
+                            if (typeof this.avatarLottie.play === 'function') {
+                                this.avatarLottie.play();
+                            } else {
+                                this.avatarLottie.setLoop(true);
+                                this.avatarLottie.play();
+                            }
+                        }, 100);
+                    } catch (e) {
+                        console.log('Lottie play error:', e);
+                    }
                 }
             }
  
             stopAvatar() {
-                console.log('Stopping avatar animation');
-                if (this.avatarWrapper) {
-                    this.avatarWrapper.classList.remove('speaking');
+                this.avatarWrapper?.classList.remove('speaking');
+                if (this.avatarLottie) {
+                    try {
+                        if (typeof this.avatarLottie.stop === 'function') {
+                            this.avatarLottie.stop();
+                        } else {
+                            this.avatarLottie.pause();
+                        }
+                    } catch (e) {
+                        console.log('Lottie stop error:', e);
+                    }
                 }
-                if (this.avatarLottie && typeof this.avatarLottie.stop === 'function') {
-                    this.avatarLottie.stop();
-                    console.log('Lottie animation stopped');
-                }
-            }
- 
-            scrollToBottom() {
-                this.messages.scrollTop = this.messages.scrollHeight;
             }
         }
  
@@ -898,5 +793,7 @@
             window.assistant = new AIAssistant();
         }
     </script>
+
 </body>
 </html>
+
