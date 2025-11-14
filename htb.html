@@ -15,7 +15,6 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            overflow-x: hidden;
         }
  
         .chat-trigger {
@@ -48,11 +47,10 @@
  
         .chat-container {
             position: fixed;
-            bottom: 24px;
+            bottom: 100px;
             right: 24px;
-            width: min(440px, 95vw);
-            height: min(800px, 90vh);
-            max-height: calc(100vh - 100px);
+            width: 440px;
+            height: 800px;
             background: #ffffff;
             border-radius: 24px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -87,7 +85,6 @@
             position: relative;
             border-radius: 24px 24px 0 0;
             overflow: hidden;
-            flex-shrink: 0;
         }
  
         .close-btn {
@@ -120,13 +117,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: clamp(15px, 4vh, 30px) 0;
+            padding: 30px 0 30px 0;
             position: relative;
         }
  
         .avatar-wrapper {
-            width: min(400px, 90%);
-            height: clamp(100px, 15vh, 150px);
+            width: 400px;
+            height: 150px;
+            border-radius: 0%;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -150,12 +148,12 @@
 
         .header-info {
             text-align: center;
-            padding: 0 24px clamp(12px, 3vh, 24px) 24px;
+            padding: 0 24px 24px 24px;
             width: 100%;
         }
 
         .avatar-title {
-            font-size: clamp(18px, 3vw, 22px);
+            font-size: 22px;
             font-weight: 600;
             color: white;
             margin-bottom: 8px;
@@ -163,7 +161,7 @@
         }
 
         .avatar-status {
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: 14px;
             color: rgba(255, 255, 255, 0.95);
             display: flex;
             align-items: center;
@@ -187,20 +185,19 @@
         .suggestion-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: clamp(6px, 1.5vw, 10px);
-            padding: clamp(10px, 2vh, 16px);
+            gap: 10px;
+            padding: 16px;
             background: #F8F9FA;
             border-bottom: 1px solid #E8EAED;
-            flex-shrink: 0;
         }
  
         .suggestion-btn {
-            padding: clamp(8px, 2vh, 12px) clamp(10px, 2vw, 14px);
+            padding: 12px 14px;
             background: white;
             border: 1.5px solid #0066FF;
             border-radius: 14px;
             color: #0066FF;
-            font-size: clamp(11px, 2vw, 13px);
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
@@ -221,12 +218,11 @@
         .chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: clamp(12px, 3vh, 20px);
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: clamp(10px, 2vh, 14px);
+            gap: 14px;
             background: white;
-            min-height: 0;
         }
  
         .chat-messages::-webkit-scrollbar {
@@ -261,14 +257,13 @@
  
         .message-bubble {
             background: #F3F4F6;
-            padding: clamp(9px, 2vh, 11px) clamp(12px, 2.5vw, 15px);
+            padding: 11px 15px;
             border-radius: 16px;
             color: #1F2937;
-            font-size: clamp(13px, 2vw, 14px);
+            font-size: 14px;
             line-height: 1.5;
             max-width: 75%;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-            word-wrap: break-word;
         }
  
         .message.user .message-bubble {
@@ -302,29 +297,27 @@
         }
  
         .chat-controls {
-            padding: clamp(12px, 2.5vh, 16px);
+            padding: 16px;
             background: white;
             border-top: 1px solid #E8EAED;
-            flex-shrink: 0;
         }
  
         .input-row {
             display: flex;
-            gap: clamp(6px, 1.5vw, 10px);
-            margin-bottom: clamp(8px, 2vh, 12px);
+            gap: 10px;
+            margin-bottom: 12px;
         }
  
         .chat-input {
             flex: 1;
-            padding: clamp(10px, 2vh, 12px) clamp(12px, 2.5vw, 16px);
+            padding: 12px 16px;
             background: #F8F9FA;
             border: 1px solid #E8EAED;
             border-radius: 24px;
-            font-size: clamp(13px, 2vw, 14px);
+            font-size: 14px;
             resize: none;
             font-family: inherit;
             max-height: 80px;
-            min-height: 42px;
         }
  
         .chat-input:focus {
@@ -333,22 +326,18 @@
             background: white;
         }
  
-        .mic-btn, .send-btn {
-            width: clamp(42px, 8vw, 48px);
-            height: clamp(42px, 8vw, 48px);
+        .mic-btn {
+            width: 48px;
+            height: 48px;
+            background: #F8F9FA;
+            border: 1px solid #E8EAED;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            flex-shrink: 0;
-        }
-
-        .mic-btn {
-            background: #F8F9FA;
-            border: 1px solid #E8EAED;
-            font-size: clamp(18px, 3vw, 20px);
+            font-size: 20px;
         }
  
         .mic-btn:hover {
@@ -368,8 +357,16 @@
         }
  
         .send-btn {
+            width: 48px;
+            height: 48px;
             background: #0066FF;
             border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
         }
  
         .send-btn:hover {
@@ -383,23 +380,23 @@
         }
  
         .send-btn svg {
-            width: clamp(16px, 3vw, 20px);
-            height: clamp(16px, 3vw, 20px);
+            width: 20px;
+            height: 20px;
             fill: white;
         }
  
         .control-row {
             display: flex;
-            gap: clamp(6px, 1.5vw, 10px);
+            gap: 10px;
             align-items: center;
         }
  
         .mute-btn {
-            padding: clamp(8px, 2vh, 10px) clamp(12px, 2.5vw, 16px);
+            padding: 10px 16px;
             background: #F8F9FA;
             border: 1px solid #E8EAED;
             border-radius: 12px;
-            font-size: clamp(11px, 2vw, 13px);
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
             flex: 1;
@@ -407,7 +404,6 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            white-space: nowrap;
         }
  
         .mute-btn:hover {
@@ -421,66 +417,43 @@
         }
  
         .voice-select {
-            padding: clamp(8px, 2vh, 10px) clamp(10px, 2vw, 14px);
+            padding: 10px 14px;
             background: #F8F9FA;
             border: 1px solid #E8EAED;
             border-radius: 12px;
-            font-size: clamp(10px, 1.8vw, 12px);
+            font-size: 12px;
             cursor: pointer;
             flex: 1;
-            min-width: 0;
         }
  
         .welcome {
             text-align: center;
-            padding: clamp(30px, 8vh, 40px) clamp(15px, 4vw, 20px);
+            padding: 40px 20px;
         }
  
         .welcome h2 {
             color: #1F2937;
-            font-size: clamp(18px, 3vw, 20px);
+            font-size: 20px;
             margin-bottom: 10px;
             font-weight: 600;
         }
  
         .welcome p {
             color: #6B7280;
-            font-size: clamp(12px, 2vw, 14px);
+            font-size: 14px;
         }
  
         @media (max-width: 768px) {
             .chat-container {
-                width: 100%;
-                height: 100%;
+                width: 100vw;
+                height: 100vh;
                 bottom: 0;
                 right: 0;
                 border-radius: 0;
-                max-height: 100vh;
             }
 
             .chat-header {
                 border-radius: 0;
-            }
-
-            .chat-trigger {
-                bottom: 20px;
-                right: 20px;
-                width: 56px;
-                height: 56px;
-            }
-        }
-
-        @media (max-height: 700px) {
-            .avatar-section {
-                padding: 15px 0;
-            }
-
-            .avatar-wrapper {
-                height: 80px;
-            }
-
-            .header-info {
-                padding: 0 24px 15px 24px;
             }
         }
     </style>
@@ -501,7 +474,7 @@
                     <dotlottie-wc
                         id="avatarLottie"
                         src="https://images.webneed.com/main/Talking_Character.json"
-                        style="width: 140%; height: 120%;">
+                        style="width: 740px; height: 200px;">
                     </dotlottie-wc>
                 </div>
             </div>
@@ -524,7 +497,7 @@
         <div class="chat-messages" id="chatMessages">
             <div class="welcome">
                 <h2>👋 Hi! I'm your AI Assistant</h2>
-                <p>Unmute me first, then ask me anything!</p>
+                <p>Click a suggestion or ask me anything!</p>
             </div>
         </div>
  
@@ -541,14 +514,14 @@
             <div class="control-row">
                 <button class="mute-btn" id="muteBtn">🔇 Muted</button>
                 <select class="voice-select" id="voiceSelect">
-                    <option>Loading...</option>
+                    <option>Default Voice</option>
                 </select>
             </div>
         </div>
     </div>
  
     <script>
-        window.addEventListener('DOMContentLoaded', function() {
+        (function() {
             const els = {
                 trigger: document.getElementById('chatTrigger'),
                 container: document.getElementById('chatContainer'),
@@ -568,7 +541,8 @@
                 muted: true,
                 voices: [],
                 voice: null,
-                recognition: null
+                recognition: null,
+                speaking: false
             };
 
             const API = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
@@ -590,11 +564,11 @@
                 const all = speechSynthesis.getVoices();
                 if (!all.length) return;
                 
-                state.voices = all.filter(v => v.lang.startsWith('en'));
+                state.voices = all.filter(v => v.lang.includes('en'));
                 if (!state.voices.length) state.voices = all;
                 
                 els.voice.innerHTML = state.voices.map((v, i) =>
-                    `<option value="${i}">${v.name}</option>`
+                    `<option value="${i}">${v.name} (${v.lang})</option>`
                 ).join('');
                 
                 state.voice = state.voices[0];
@@ -603,7 +577,7 @@
             if (speechSynthesis) {
                 loadVoices();
                 speechSynthesis.onvoiceschanged = loadVoices;
-                setTimeout(loadVoices, 200);
+                setTimeout(loadVoices, 500);
                 setTimeout(loadVoices, 1000);
             }
 
@@ -632,7 +606,7 @@
             // Mute
             els.mute.onclick = () => {
                 state.muted = !state.muted;
-                els.mute.innerHTML = state.muted ? '🔇 Muted' : '🔊 On';
+                els.mute.innerHTML = state.muted ? '🔇 Muted' : '🔊 Speaking';
                 els.mute.classList.toggle('active', !state.muted);
                 if (state.muted) {
                     speechSynthesis.cancel();
@@ -679,13 +653,13 @@
                     if (!res.ok) throw new Error();
                     
                     const data = await res.json();
-                    const reply = data?.output?.trim() || 'Sorry, no response.';
+                    const reply = data?.output?.trim() || '';
                     
                     add(reply, false);
-                    if (!state.muted) speak(reply);
+                    if (!state.muted && reply) speak(reply);
                 } catch {
                     typing(false);
-                    add('Error occurred.', false);
+                    add('Sorry, I encountered an error.', false);
                 } finally {
                     els.send.disabled = false;
                 }
@@ -730,21 +704,38 @@
                 u.onerror = stop;
                 
                 speechSynthesis.speak(u);
+                
+                // Monitor speaking state
+                let checks = 0;
+                const monitor = setInterval(() => {
+                    if (speechSynthesis.speaking && !state.speaking) {
+                        state.speaking = true;
+                        play();
+                    } else if (!speechSynthesis.speaking && state.speaking) {
+                        state.speaking = false;
+                        stop();
+                        clearInterval(monitor);
+                    }
+                    if (++checks > 100) clearInterval(monitor);
+                }, 100);
             }
 
             function play() {
+                state.speaking = true;
                 els.wrapper?.classList.add('speaking');
                 if (els.avatar?.play) els.avatar.play();
             }
 
             function stop() {
+                state.speaking = false;
                 els.wrapper?.classList.remove('speaking');
                 if (els.avatar?.stop) els.avatar.stop();
             }
-        });
+        })();
     </script>
 </body>
 </html>
+
 
 
 
