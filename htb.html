@@ -520,198 +520,192 @@
         </div>
     </div>
  
-        <script>
-        class AIAssistant {
-            constructor() {
-                this.isOpen = false;
-                this.isMuted = true;
-                this.isListening = false;
-                this.voices = [];
-                this.selectedVoice = null;
-                this.recognition = null;
-                this.apiUrl = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
- 
-                this.initElements();
-                this.initEventListeners();
-                // Initialize TTS on first user interaction
-                document.addEventListener('click', () => this.initSpeechSynthesis(), { once: true });
-                this.initSpeechRecognition();
+    <script>
+        // Wait for DOM to be fully loaded
+        window.addEventListener('DOMContentLoaded', function() {
+            const trigger = document.getElementById('chatTrigger');
+            const container = document.getElementById('chatContainer');
+            const closeBtn = document.getElementById('closeBtn');
+            const messages = document.getElementById('chatMessages');
+            const input = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const muteBtn = document.getElementById('muteBtn');
+            const micBtn = document.getElementById('micBtn');
+            const voiceSelect = document.getElementById('voiceSelect');
+            const avatarLottie = document.getElementById('avatarLottie');
+            const avatarWrapper = document.getElementById('avatarWrapper');
+
+            let isOpen = false;
+            let isMuted = true;
+            let isListening = false;
+            let voices = [];
+            let selectedVoice = null;
+            let recognition = null;
+            const apiUrl = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
+
+            console.log('✅ Script loaded');
+
+            // Toggle chat
+            function toggle() {
+                isOpen = !isOpen;
+                container.classList.toggle('active');
+                console.log('Chat toggled:', isOpen);
+                if (isOpen) setTimeout(() => input.focus(), 100);
             }
- 
-            initElements() {
-                this.trigger = document.getElementById('chatTrigger');
-                this.container = document.getElementById('chatContainer');
-                this.messages = document.getElementById('chatMessages');
-                this.input = document.getElementById('chatInput');
-                this.sendBtn = document.getElementById('sendBtn');
-                this.closeBtn = document.getElementById('closeBtn');
-                this.muteBtn = document.getElementById('muteBtn');
-                this.micBtn = document.getElementById('micBtn');
-                this.voiceSelect = document.getElementById('voiceSelect');
-                this.avatarLottie = document.getElementById('avatarLottie');
-                this.avatarWrapper = document.getElementById('avatarWrapper');
+
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Trigger clicked!');
+                toggle();
+            });
+
+            closeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggle();
+            });
+
+            // Voice loading
+            function loadVoices() {
+                const allVoices = window.speechSynthesis.getVoices();
+                if (allVoices.length > 0) {
+                    voices = allVoices.filter(v => v.lang.includes('en'));
+                    if (voices.length === 0) voices = allVoices;
+                    
+                    voiceSelect.innerHTML = voices.map((v, i) =>
+                        `<option value="${i}">${v.name} (${v.lang})</option>`
+                    ).join('');
+                    
+                    selectedVoice = voices[0];
+                    console.log('Voices loaded:', voices.length);
+                }
             }
- 
-            initEventListeners() {
-                this.trigger.addEventListener('click', () => this.toggle());
-                this.closeBtn.addEventListener('click', () => this.toggle());
-                this.sendBtn.addEventListener('click', () => this.sendMessage());
- 
-                this.input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        this.sendMessage();
-                    }
-                });
- 
-                this.muteBtn.addEventListener('click', () => this.toggleMute());
-                this.micBtn.addEventListener('click', () => this.toggleVoiceInput());
- 
-                this.voiceSelect.addEventListener('change', (e) => {
-                    this.selectedVoice = this.voices[e.target.value];
-                });
- 
-                document.querySelectorAll('.suggestion-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        this.input.value = btn.getAttribute('data-msg');
-                        this.sendMessage();
-                    });
-                });
-            }
- 
-            initSpeechSynthesis() {
-                if (!window.speechSynthesis) return;
-                
-                const loadVoices = () => {
-                    const allVoices = window.speechSynthesis.getVoices();
-                    if (allVoices.length > 0) {
-                        this.voices = allVoices.filter(v => v.lang.includes('en'));
-                        if (this.voices.length === 0) this.voices = allVoices;
-                        
-                        this.voiceSelect.innerHTML = this.voices.map((v, i) =>
-                            `<option value="${i}">${v.name} (${v.lang})</option>`
-                        ).join('');
-                        
-                        this.selectedVoice = this.voices[0];
-                        console.log('Voices loaded:', this.voices.length);
-                    }
-                };
- 
-                window.speechSynthesis.onvoiceschanged = loadVoices;
+
+            if (window.speechSynthesis) {
                 loadVoices();
+                window.speechSynthesis.onvoiceschanged = loadVoices;
                 setTimeout(loadVoices, 100);
                 setTimeout(loadVoices, 500);
+                setTimeout(loadVoices, 1000);
             }
- 
-            initSpeechRecognition() {
-                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SR) {
-                    this.micBtn.style.display = 'none';
-                    return;
-                }
-                
-                this.recognition = new SR();
-                this.recognition.lang = 'en-US';
-                this.recognition.onstart = () => {
-                    this.isListening = true;
-                    this.micBtn.classList.add('active');
+
+            voiceSelect.addEventListener('change', function(e) {
+                selectedVoice = voices[parseInt(e.target.value)];
+            });
+
+            // STT
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SR) {
+                recognition = new SR();
+                recognition.lang = 'en-US';
+                recognition.onstart = () => {
+                    isListening = true;
+                    micBtn.classList.add('active');
                 };
-                this.recognition.onresult = (e) => {
-                    this.input.value = e.results[0][0].transcript;
-                    this.sendMessage();
+                recognition.onresult = (e) => {
+                    input.value = e.results[0][0].transcript;
+                    sendMessage();
                 };
-                this.recognition.onend = () => {
-                    this.isListening = false;
-                    this.micBtn.classList.remove('active');
+                recognition.onend = () => {
+                    isListening = false;
+                    micBtn.classList.remove('active');
                 };
+            } else {
+                micBtn.style.display = 'none';
             }
- 
-            toggle() {
-                this.isOpen = !this.isOpen;
-                this.container.classList.toggle('active');
-                if (this.isOpen) setTimeout(() => this.input.focus(), 100);
-            }
- 
-            toggleMute() {
-                this.isMuted = !this.isMuted;
-                this.muteBtn.innerHTML = this.isMuted ? '🔇 Muted' : '🔊 Speaking';
-                this.muteBtn.classList.toggle('active', !this.isMuted);
-                
-                if (this.isMuted && window.speechSynthesis.speaking) {
+
+            micBtn.addEventListener('click', function() {
+                if (!recognition) return alert('Voice not supported');
+                isListening ? recognition.stop() : recognition.start();
+            });
+
+            // Mute toggle
+            muteBtn.addEventListener('click', function() {
+                isMuted = !isMuted;
+                muteBtn.innerHTML = isMuted ? '🔇 Muted' : '🔊 Speaking';
+                muteBtn.classList.toggle('active', !isMuted);
+                if (isMuted && window.speechSynthesis.speaking) {
                     window.speechSynthesis.cancel();
-                    this.stopAvatar();
+                    stopAvatar();
                 }
-            }
- 
-            toggleVoiceInput() {
-                if (!this.recognition) {
-                    alert('Voice input not supported');
-                    return;
+            });
+
+            // Send message
+            sendBtn.addEventListener('click', sendMessage);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
                 }
-                this.isListening ? this.recognition.stop() : this.recognition.start();
-            }
- 
-            async sendMessage() {
-                const text = this.input.value.trim();
+            });
+
+            document.querySelectorAll('.suggestion-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    input.value = btn.getAttribute('data-msg');
+                    sendMessage();
+                });
+            });
+
+            async function sendMessage() {
+                const text = input.value.trim();
                 if (!text) return;
- 
-                const welcome = this.messages.querySelector('.welcome');
+
+                const welcome = messages.querySelector('.welcome');
                 if (welcome) welcome.remove();
- 
-                this.addMessage(text, true);
-                this.input.value = '';
-                this.sendBtn.disabled = true;
-                this.showTyping();
- 
+
+                addMessage(text, true);
+                input.value = '';
+                sendBtn.disabled = true;
+                showTyping();
+
                 try {
-                    const response = await fetch(this.apiUrl, {
+                    const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'creepy': '1234' },
                         body: JSON.stringify({ message: text })
                     });
- 
+
                     if (!response.ok) throw new Error('API error');
                     const data = await response.json();
-                    this.removeTyping();
- 
+                    hideTyping();
+
                     if (data?.output) {
                         const reply = data.output.trim();
-                        this.addMessage(reply, false);
-                        if (!this.isMuted) setTimeout(() => this.speak(reply), 200);
+                        addMessage(reply, false);
+                        if (!isMuted) speak(reply);
                     }
                 } catch (error) {
-                    this.removeTyping();
-                    this.addMessage('Sorry, I encountered an error.', false);
+                    hideTyping();
+                    addMessage('Sorry, I encountered an error.', false);
                 } finally {
-                    this.sendBtn.disabled = false;
+                    sendBtn.disabled = false;
                 }
             }
- 
-            addMessage(text, isUser = false) {
+
+            function addMessage(text, isUser = false) {
                 const msg = document.createElement('div');
                 msg.className = 'message' + (isUser ? ' user' : '');
                 const bubble = document.createElement('div');
                 bubble.className = 'message-bubble';
                 bubble.textContent = text;
                 msg.appendChild(bubble);
-                this.messages.appendChild(msg);
-                this.messages.scrollTop = this.messages.scrollHeight;
+                messages.appendChild(msg);
+                messages.scrollTop = messages.scrollHeight;
             }
- 
-            showTyping() {
+
+            function showTyping() {
                 const typing = document.createElement('div');
                 typing.className = 'message typing-msg';
                 typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
-                this.messages.appendChild(typing);
-                this.messages.scrollTop = this.messages.scrollHeight;
+                messages.appendChild(typing);
+                messages.scrollTop = messages.scrollHeight;
             }
- 
-            removeTyping() {
-                const t = this.messages.querySelector('.typing-msg');
+
+            function hideTyping() {
+                const t = messages.querySelector('.typing-msg');
                 if (t) t.remove();
             }
- 
-            stripMarkdown(text) {
+
+            function stripMarkdown(text) {
                 return text
                     .replace(/https?:\/\/[^\s]+/g, '')
                     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
@@ -719,81 +713,52 @@
                     .replace(/\s+/g, ' ')
                     .trim();
             }
- 
-            speak(text) {
+
+            function speak(text) {
                 if (!window.speechSynthesis) return;
                 
-                const cleanText = this.stripMarkdown(text);
+                const cleanText = stripMarkdown(text);
                 window.speechSynthesis.cancel();
- 
+
                 const utterance = new SpeechSynthesisUtterance(cleanText);
-                if (this.selectedVoice) utterance.voice = this.selectedVoice;
+                if (selectedVoice) utterance.voice = selectedVoice;
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 utterance.volume = 1.0;
- 
+
                 utterance.onstart = () => {
-                    console.log('Speech started');
-                    this.startAvatar();
+                    startAvatar();
                 };
- 
+
                 utterance.onend = () => {
-                    console.log('Speech ended');
-                    this.stopAvatar();
+                    stopAvatar();
                 };
- 
+
                 utterance.onerror = () => {
-                    console.log('Speech error');
-                    this.stopAvatar();
+                    stopAvatar();
                 };
- 
+
                 window.speechSynthesis.speak(utterance);
             }
- 
-            startAvatar() {
-                this.avatarWrapper?.classList.add('speaking');
-                if (this.avatarLottie) {
-                    try {
-                        // Wait for dotlottie to be ready
-                        setTimeout(() => {
-                            if (typeof this.avatarLottie.play === 'function') {
-                                this.avatarLottie.play();
-                            } else {
-                                this.avatarLottie.setLoop(true);
-                                this.avatarLottie.play();
-                            }
-                        }, 100);
-                    } catch (e) {
-                        console.log('Lottie play error:', e);
-                    }
-                }
-            }
- 
-            stopAvatar() {
-                this.avatarWrapper?.classList.remove('speaking');
-                if (this.avatarLottie) {
-                    try {
-                        if (typeof this.avatarLottie.stop === 'function') {
-                            this.avatarLottie.stop();
-                        } else {
-                            this.avatarLottie.pause();
-                        }
-                    } catch (e) {
-                        console.log('Lottie stop error:', e);
-                    }
-                }
-            }
-        }
- 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                window.assistant = new AIAssistant();
-            });
-        } else {
-            window.assistant = new AIAssistant();
-        }
-    </script>
 
+            function startAvatar() {
+                if (avatarWrapper) avatarWrapper.classList.add('speaking');
+                if (avatarLottie && typeof avatarLottie.play === 'function') {
+                    avatarLottie.play();
+                }
+            }
+
+            function stopAvatar() {
+                if (avatarWrapper) avatarWrapper.classList.remove('speaking');
+                if (avatarLottie && typeof avatarLottie.stop === 'function') {
+                    avatarLottie.stop();
+                }
+            }
+
+            console.log('✅ All event listeners attached');
+        });
+    </script>
 </body>
 </html>
+
 
