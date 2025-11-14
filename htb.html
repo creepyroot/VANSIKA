@@ -497,7 +497,7 @@
         <div class="chat-messages" id="chatMessages">
             <div class="welcome">
                 <h2>👋 Hi! I'm your AI Assistant</h2>
-                <p>Click a suggestion or ask me anything!</p>
+                <p>Click unmute first, then ask me anything!</p>
             </div>
         </div>
  
@@ -723,19 +723,27 @@
             function play() {
                 state.speaking = true;
                 els.wrapper?.classList.add('speaking');
-                if (els.avatar?.play) els.avatar.play();
+                
+                if (els.avatar) {
+                    try {
+                        els.avatar.setAttribute('loop', 'true');
+                        els.avatar.play();
+                    } catch(e) {}
+                }
             }
 
             function stop() {
                 state.speaking = false;
                 els.wrapper?.classList.remove('speaking');
-                if (els.avatar?.stop) els.avatar.stop();
+                
+                if (els.avatar) {
+                    try {
+                        els.avatar.removeAttribute('loop');
+                        els.avatar.stop();
+                    } catch(e) {}
+                }
             }
         })();
     </script>
 </body>
 </html>
-
-
-
-
