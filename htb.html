@@ -521,243 +521,298 @@
     </div>
  
     <script>
-        // Wait for DOM to be fully loaded
-        window.addEventListener('DOMContentLoaded', function() {
-            const trigger = document.getElementById('chatTrigger');
-            const container = document.getElementById('chatContainer');
-            const closeBtn = document.getElementById('closeBtn');
-            const messages = document.getElementById('chatMessages');
-            const input = document.getElementById('chatInput');
-            const sendBtn = document.getElementById('sendBtn');
-            const muteBtn = document.getElementById('muteBtn');
-            const micBtn = document.getElementById('micBtn');
-            const voiceSelect = document.getElementById('voiceSelect');
-            const avatarLottie = document.getElementById('avatarLottie');
-            const avatarWrapper = document.getElementById('avatarWrapper');
+    window.addEventListener('DOMContentLoaded', function() {
+        const trigger = document.getElementById('chatTrigger');
+        const container = document.getElementById('chatContainer');
+        const closeBtn = document.getElementById('closeBtn');
+        const messages = document.getElementById('chatMessages');
+        const input = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        const micBtn = document.getElementById('micBtn');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const avatarLottie = document.getElementById('avatarLottie');
+        const avatarWrapper = document.getElementById('avatarWrapper');
 
-            let isOpen = false;
-            let isMuted = true;
-            let isListening = false;
-            let voices = [];
-            let selectedVoice = null;
-            let recognition = null;
-            const apiUrl = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
+        let isOpen = false;
+        let isMuted = true;
+        let isListening = false;
+        let voices = [];
+        let selectedVoice = null;
+        let recognition = null;
+        let pendingUtterance = null;
+        const apiUrl = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
 
-            console.log('✅ Script loaded');
+        // Toggle chat
+        trigger.onclick = function() {
+            isOpen = !isOpen;
+            container.classList.toggle('active');
+            if (isOpen) setTimeout(() => input.focus(), 100);
+        };
 
-            // Toggle chat
-            function toggle() {
-                isOpen = !isOpen;
-                container.classList.toggle('active');
-                console.log('Chat toggled:', isOpen);
-                if (isOpen) setTimeout(() => input.focus(), 100);
-            }
+        closeBtn.onclick = function() {
+            isOpen = false;
+            container.classList.remove('active');
+        };
 
-            trigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log('Trigger clicked!');
-                toggle();
-            });
-
-            closeBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                toggle();
-            });
-
-            // Voice loading
-            function loadVoices() {
-                const allVoices = window.speechSynthesis.getVoices();
-                if (allVoices.length > 0) {
-                    voices = allVoices.filter(v => v.lang.includes('en'));
-                    if (voices.length === 0) voices = allVoices;
-                    
-                    voiceSelect.innerHTML = voices.map((v, i) =>
-                        `<option value="${i}">${v.name} (${v.lang})</option>`
-                    ).join('');
-                    
-                    selectedVoice = voices[0];
-                    console.log('Voices loaded:', voices.length);
-                }
-            }
-
-            if (window.speechSynthesis) {
-                loadVoices();
-                window.speechSynthesis.onvoiceschanged = loadVoices;
-                setTimeout(loadVoices, 100);
-                setTimeout(loadVoices, 500);
-                setTimeout(loadVoices, 1000);
-            }
-
-            voiceSelect.addEventListener('change', function(e) {
-                selectedVoice = voices[parseInt(e.target.value)];
-            });
-
-            // STT
-            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SR) {
-                recognition = new SR();
-                recognition.lang = 'en-US';
-                recognition.onstart = () => {
-                    isListening = true;
-                    micBtn.classList.add('active');
-                };
-                recognition.onresult = (e) => {
-                    input.value = e.results[0][0].transcript;
-                    sendMessage();
-                };
-                recognition.onend = () => {
-                    isListening = false;
-                    micBtn.classList.remove('active');
-                };
-            } else {
-                micBtn.style.display = 'none';
-            }
-
-            micBtn.addEventListener('click', function() {
-                if (!recognition) return alert('Voice not supported');
-                isListening ? recognition.stop() : recognition.start();
-            });
-
-            // Mute toggle
-            muteBtn.addEventListener('click', function() {
-                isMuted = !isMuted;
-                muteBtn.innerHTML = isMuted ? '🔇 Muted' : '🔊 Speaking';
-                muteBtn.classList.toggle('active', !isMuted);
-                if (isMuted && window.speechSynthesis.speaking) {
-                    window.speechSynthesis.cancel();
-                    stopAvatar();
-                }
-            });
-
-            // Send message
-            sendBtn.addEventListener('click', sendMessage);
-            input.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                }
-            });
-
-            document.querySelectorAll('.suggestion-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    input.value = btn.getAttribute('data-msg');
-                    sendMessage();
-                });
-            });
-
-            async function sendMessage() {
-                const text = input.value.trim();
-                if (!text) return;
-
-                const welcome = messages.querySelector('.welcome');
-                if (welcome) welcome.remove();
-
-                addMessage(text, true);
-                input.value = '';
-                sendBtn.disabled = true;
-                showTyping();
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'creepy': '1234' },
-                        body: JSON.stringify({ message: text })
-                    });
-
-                    if (!response.ok) throw new Error('API error');
-                    const data = await response.json();
-                    hideTyping();
-
-                    if (data?.output) {
-                        const reply = data.output.trim();
-                        addMessage(reply, false);
-                        if (!isMuted) speak(reply);
-                    }
-                } catch (error) {
-                    hideTyping();
-                    addMessage('Sorry, I encountered an error.', false);
-                } finally {
-                    sendBtn.disabled = false;
-                }
-            }
-
-            function addMessage(text, isUser = false) {
-                const msg = document.createElement('div');
-                msg.className = 'message' + (isUser ? ' user' : '');
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                bubble.textContent = text;
-                msg.appendChild(bubble);
-                messages.appendChild(msg);
-                messages.scrollTop = messages.scrollHeight;
-            }
-
-            function showTyping() {
-                const typing = document.createElement('div');
-                typing.className = 'message typing-msg';
-                typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
-                messages.appendChild(typing);
-                messages.scrollTop = messages.scrollHeight;
-            }
-
-            function hideTyping() {
-                const t = messages.querySelector('.typing-msg');
-                if (t) t.remove();
-            }
-
-            function stripMarkdown(text) {
-                return text
-                    .replace(/https?:\/\/[^\s]+/g, '')
-                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-                    .replace(/[*_`~>#-]+/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-            }
-
-            function speak(text) {
-                if (!window.speechSynthesis) return;
+        // Voice loading
+        function loadVoices() {
+            const allVoices = window.speechSynthesis.getVoices();
+            if (allVoices.length > 0) {
+                voices = allVoices.filter(v => v.lang.includes('en'));
+                if (voices.length === 0) voices = allVoices;
                 
-                const cleanText = stripMarkdown(text);
-                window.speechSynthesis.cancel();
+                voiceSelect.innerHTML = voices.map((v, i) =>
+                    `<option value="${i}">${v.name} (${v.lang})</option>`
+                ).join('');
+                
+                selectedVoice = voices[0];
+                console.log('✓ Voices loaded:', voices.length);
+            }
+        }
 
+        if (window.speechSynthesis) {
+            loadVoices();
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            setTimeout(loadVoices, 100);
+            setTimeout(loadVoices, 500);
+            setTimeout(loadVoices, 1000);
+        }
+
+        voiceSelect.onchange = function(e) {
+            selectedVoice = voices[parseInt(e.target.value)];
+        };
+
+        // STT
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SR) {
+            recognition = new SR();
+            recognition.lang = 'en-US';
+            recognition.onstart = () => {
+                isListening = true;
+                micBtn.classList.add('active');
+            };
+            recognition.onresult = (e) => {
+                input.value = e.results[0][0].transcript;
+                sendMessage();
+            };
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.classList.remove('active');
+            };
+        } else {
+            micBtn.style.display = 'none';
+        }
+
+        micBtn.onclick = function() {
+            if (!recognition) return alert('Voice not supported');
+            isListening ? recognition.stop() : recognition.start();
+        };
+
+        // Mute toggle
+        muteBtn.onclick = function() {
+            isMuted = !isMuted;
+            muteBtn.innerHTML = isMuted ? '🔇 Muted' : '🔊 Speaking';
+            muteBtn.classList.toggle('active', !isMuted);
+            if (isMuted && window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                stopAvatar();
+            }
+            console.log('Mute:', isMuted);
+        };
+
+        // Send message
+        sendBtn.onclick = sendMessage;
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        document.querySelectorAll('.suggestion-btn').forEach(btn => {
+            btn.onclick = function() {
+                input.value = btn.getAttribute('data-msg');
+                sendMessage();
+            };
+        });
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            const welcome = messages.querySelector('.welcome');
+            if (welcome) welcome.remove();
+
+            addMessage(text, true);
+            input.value = '';
+            sendBtn.disabled = true;
+            showTyping();
+
+            // CRITICAL: Create silent utterance NOW during user gesture
+            if (!isMuted && window.speechSynthesis) {
+                console.log('🔓 Unlocking speech...');
+                const unlock = new SpeechSynthesisUtterance(' ');
+                unlock.volume = 0;
+                unlock.rate = 10;
+                window.speechSynthesis.speak(unlock);
+            }
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'creepy': '1234' },
+                    body: JSON.stringify({ message: text })
+                });
+
+                if (!response.ok) throw new Error('API error');
+                const data = await response.json();
+                hideTyping();
+
+                if (data?.output) {
+                    const reply = data.output.trim();
+                    addMessage(reply, false);
+                    if (!isMuted) {
+                        console.log('🔊 Attempting to speak...');
+                        speak(reply);
+                    }
+                }
+            } catch (error) {
+                console.error('API error:', error);
+                hideTyping();
+                addMessage('Sorry, I encountered an error.', false);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        function addMessage(text, isUser = false) {
+            const msg = document.createElement('div');
+            msg.className = 'message' + (isUser ? ' user' : '');
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = text;
+            msg.appendChild(bubble);
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showTyping() {
+            const typing = document.createElement('div');
+            typing.className = 'message typing-msg';
+            typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            messages.appendChild(typing);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTyping() {
+            const t = messages.querySelector('.typing-msg');
+            if (t) t.remove();
+        }
+
+        function stripMarkdown(text) {
+            return text
+                .replace(/https?:\/\/[^\s]+/g, '')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                .replace(/[*_`~>#-]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function speak(text) {
+            if (!window.speechSynthesis) {
+                console.log('✗ Speech not supported');
+                return;
+            }
+            
+            const cleanText = stripMarkdown(text);
+            console.log('📝 Clean text:', cleanText.substring(0, 50) + '...');
+            
+            window.speechSynthesis.cancel();
+
+            setTimeout(() => {
                 const utterance = new SpeechSynthesisUtterance(cleanText);
-                if (selectedVoice) utterance.voice = selectedVoice;
+                
+                if (selectedVoice) {
+                    utterance.voice = selectedVoice;
+                    console.log('🎤 Using voice:', selectedVoice.name);
+                }
+                
                 utterance.rate = 1.0;
                 utterance.pitch = 1.0;
                 utterance.volume = 1.0;
 
-                utterance.onstart = () => {
+                utterance.onstart = function() {
+                    console.log('✅ SPEECH STARTED');
                     startAvatar();
                 };
 
-                utterance.onend = () => {
+                utterance.onend = function() {
+                    console.log('✅ SPEECH ENDED');
                     stopAvatar();
                 };
 
-                utterance.onerror = () => {
+                utterance.onerror = function(e) {
+                    console.log('✗ SPEECH ERROR:', e.error);
                     stopAvatar();
                 };
 
+                console.log('🚀 Calling speechSynthesis.speak()...');
                 window.speechSynthesis.speak(utterance);
-            }
+                
+                // Check if it actually started
+                setTimeout(() => {
+                    if (window.speechSynthesis.speaking) {
+                        console.log('✓ Speech is speaking!');
+                    } else {
+                        console.log('⚠ Speech did NOT start - browser blocked it');
+                        console.log('⚠ Make sure you:');
+                        console.log('   1. Clicked unmute button');
+                        console.log('   2. Are on HTTPS or localhost');
+                        console.log('   3. Have system voices installed');
+                    }
+                }, 500);
+            }, 100);
+        }
 
-            function startAvatar() {
-                if (avatarWrapper) avatarWrapper.classList.add('speaking');
-                if (avatarLottie && typeof avatarLottie.play === 'function') {
-                    avatarLottie.play();
+        function startAvatar() {
+            console.log('▶ Starting avatar');
+            if (avatarWrapper) {
+                avatarWrapper.classList.add('speaking');
+            }
+            if (avatarLottie) {
+                try {
+                    if (typeof avatarLottie.play === 'function') {
+                        avatarLottie.play();
+                        console.log('✓ Avatar playing');
+                    } else {
+                        console.log('⚠ Avatar.play() not available');
+                    }
+                } catch(e) {
+                    console.log('✗ Avatar error:', e);
                 }
             }
+        }
 
-            function stopAvatar() {
-                if (avatarWrapper) avatarWrapper.classList.remove('speaking');
-                if (avatarLottie && typeof avatarLottie.stop === 'function') {
-                    avatarLottie.stop();
+        function stopAvatar() {
+            console.log('■ Stopping avatar');
+            if (avatarWrapper) {
+                avatarWrapper.classList.remove('speaking');
+            }
+            if (avatarLottie) {
+                try {
+                    if (typeof avatarLottie.stop === 'function') {
+                        avatarLottie.stop();
+                        console.log('✓ Avatar stopped');
+                    }
+                } catch(e) {
+                    console.log('✗ Avatar stop error:', e);
                 }
             }
+        }
+    });
+</script>
 
-            console.log('✅ All event listeners attached');
-        });
-    </script>
 </body>
 </html>
 
