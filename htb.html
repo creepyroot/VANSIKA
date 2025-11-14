@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebNeed AI Assistant</title>
-    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
     <style>
         * {
             margin: 0;
@@ -471,11 +471,13 @@
             <button class="close-btn" id="closeBtn">×</button>
             <div class="avatar-section">
                 <div class="avatar-wrapper" id="avatarWrapper">
-                    <dotlottie-wc
+                    <dotlottie-player
                         id="avatarLottie"
                         src="https://images.webneed.com/main/Talking_Character.json"
+                        background="transparent"
+                        speed="1"
                         style="width: 740px; height: 200px;">
-                    </dotlottie-wc>
+                    </dotlottie-player>
                 </div>
             </div>
             <div class="header-info">
@@ -497,7 +499,7 @@
         <div class="chat-messages" id="chatMessages">
             <div class="welcome">
                 <h2>👋 Hi! I'm your AI Assistant</h2>
-                <p>Click unmute first, then ask me anything!</p>
+                <p>Click unmute, then ask me anything!</p>
             </div>
         </div>
  
@@ -547,7 +549,11 @@
 
             const API = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
 
-            // Toggle
+            // Wait for Lottie to load then stop it
+            els.avatar.addEventListener('ready', () => {
+                els.avatar.stop();
+            });
+
             els.trigger.onclick = () => {
                 state.open = !state.open;
                 els.container.classList.toggle('active');
@@ -559,7 +565,6 @@
                 els.container.classList.remove('active');
             };
 
-            // Voices
             function loadVoices() {
                 const all = speechSynthesis.getVoices();
                 if (!all.length) return;
@@ -583,7 +588,6 @@
 
             els.voice.onchange = e => state.voice = state.voices[e.target.value];
 
-            // STT
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SR) {
                 state.recognition = new SR();
@@ -603,7 +607,6 @@
                 els.mic.classList.contains('active') ? state.recognition.stop() : state.recognition.start();
             };
 
-            // Mute
             els.mute.onclick = () => {
                 state.muted = !state.muted;
                 els.mute.innerHTML = state.muted ? '🔇 Muted' : '🔊 Speaking';
@@ -614,7 +617,6 @@
                 }
             };
 
-            // Send
             els.send.onclick = send;
             els.input.onkeydown = e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -705,7 +707,6 @@
                 
                 speechSynthesis.speak(u);
                 
-                // Monitor speaking state
                 let checks = 0;
                 const monitor = setInterval(() => {
                     if (speechSynthesis.speaking && !state.speaking) {
@@ -723,24 +724,18 @@
             function play() {
                 state.speaking = true;
                 els.wrapper?.classList.add('speaking');
-                
                 if (els.avatar) {
-                    try {
-                        els.avatar.setAttribute('loop', 'true');
-                        els.avatar.play();
-                    } catch(e) {}
+                    els.avatar.setLoop(true);
+                    els.avatar.play();
                 }
             }
 
             function stop() {
                 state.speaking = false;
                 els.wrapper?.classList.remove('speaking');
-                
                 if (els.avatar) {
-                    try {
-                        els.avatar.removeAttribute('loop');
-                        els.avatar.stop();
-                    } catch(e) {}
+                    els.avatar.setLoop(false);
+                    els.avatar.stop();
                 }
             }
         })();
