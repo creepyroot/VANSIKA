@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebNeed AI Assistant</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.8.5/dist/dotlottie-wc.js" type="module"></script>
     <style>
         * {
             margin: 0;
@@ -271,98 +270,6 @@
             background: #0066FF;
             color: white;
         }
-
-        /* Markdown styling */
-        .message-bubble h1,
-        .message-bubble h2,
-        .message-bubble h3 {
-            margin: 8px 0 4px 0;
-            font-weight: 600;
-        }
-
-        .message-bubble h1 { font-size: 18px; }
-        .message-bubble h2 { font-size: 16px; }
-        .message-bubble h3 { font-size: 14px; }
-
-        .message-bubble p {
-            margin: 6px 0;
-        }
-
-        .message-bubble ul,
-        .message-bubble ol {
-            margin: 6px 0;
-            padding-left: 20px;
-        }
-
-        .message-bubble li {
-            margin: 3px 0;
-        }
-
-        .message-bubble code {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-        }
-
-        .message-bubble pre {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 10px;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 8px 0;
-        }
-
-        .message-bubble pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .message-bubble a {
-            color: #0066FF;
-            text-decoration: underline;
-        }
-
-        .message-bubble strong {
-            font-weight: 600;
-        }
-
-        .message-bubble em {
-            font-style: italic;
-        }
-
-        .message-bubble blockquote {
-            border-left: 3px solid #0066FF;
-            padding-left: 12px;
-            margin: 8px 0;
-            color: #666;
-        }
-
-        .message-bubble hr {
-            border: none;
-            border-top: 1px solid #E8EAED;
-            margin: 12px 0;
-        }
-
-        .message-bubble table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 8px 0;
-            font-size: 13px;
-        }
-
-        .message-bubble table th,
-        .message-bubble table td {
-            border: 1px solid #E8EAED;
-            padding: 6px 8px;
-            text-align: left;
-        }
-
-        .message-bubble table th {
-            background: rgba(0, 102, 255, 0.1);
-            font-weight: 600;
-        }
  
         .typing {
             display: flex;
@@ -564,7 +471,11 @@
             <button class="close-btn" id="closeBtn">×</button>
             <div class="avatar-section">
                 <div class="avatar-wrapper" id="avatarWrapper">
-                    <div id="lottieAvatar" style="width: 740px; height: 200px;"></div>
+                    <dotlottie-wc
+                        id="avatarLottie"
+                        src="https://images.webneed.com/main/Talking_Character.json"
+                        style="width: 740px; height: 200px;">
+                    </dotlottie-wc>
                 </div>
             </div>
             <div class="header-info">
@@ -621,7 +532,7 @@
                 mute: document.getElementById('muteBtn'),
                 mic: document.getElementById('micBtn'),
                 voice: document.getElementById('voiceSelect'),
-                lottieDiv: document.getElementById('lottieAvatar'),
+                avatar: document.getElementById('avatarLottie'),
                 wrapper: document.getElementById('avatarWrapper')
             };
 
@@ -631,21 +542,12 @@
                 voices: [],
                 voice: null,
                 recognition: null,
-                speaking: false,
-                animation: null,
-                ttsUnlocked: false
+                speaking: false
             };
 
-            const API = 'https://n8n.srv1097195.hstgr.cloud/webhook/261e67b0-d943-49f3-8c64-e953edb63222';
+            const API = 'https://nov-aruba-robbie-worldcat.trycloudflare.com/webhook/25613997-262f-48c4-97ba-d602682a06c8';
 
-            state.animation = lottie.loadAnimation({
-                container: els.lottieDiv,
-                renderer: 'svg',
-                loop: false,
-                autoplay: false,
-                path: 'https://images.webneed.com/main/Talking_Character.json'
-            });
-
+            // Toggle
             els.trigger.onclick = () => {
                 state.open = !state.open;
                 els.container.classList.toggle('active');
@@ -657,6 +559,7 @@
                 els.container.classList.remove('active');
             };
 
+            // Voices
             function loadVoices() {
                 const all = speechSynthesis.getVoices();
                 if (!all.length) return;
@@ -674,90 +577,45 @@
             if (speechSynthesis) {
                 loadVoices();
                 speechSynthesis.onvoiceschanged = loadVoices;
-                setTimeout(loadVoices, 100);
                 setTimeout(loadVoices, 500);
                 setTimeout(loadVoices, 1000);
             }
 
             els.voice.onchange = e => state.voice = state.voices[e.target.value];
 
+            // STT
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SR) {
                 state.recognition = new SR();
-                state.recognition.continuous = false;
-                state.recognition.interimResults = false;
                 state.recognition.lang = 'en-US';
-                
-                state.recognition.onstart = () => {
-                    els.mic.classList.add('active');
-                };
-                
-                state.recognition.onend = () => {
-                    els.mic.classList.remove('active');
-                };
-                
-                state.recognition.onresult = (e) => {
-                    const transcript = e.results[0][0].transcript;
-                    els.input.value = transcript;
+                state.recognition.onstart = () => els.mic.classList.add('active');
+                state.recognition.onend = () => els.mic.classList.remove('active');
+                state.recognition.onresult = e => {
+                    els.input.value = e.results[0][0].transcript;
                     send();
-                };
-                
-                state.recognition.onerror = (e) => {
-                    console.error('Speech recognition error:', e.error);
-                    els.mic.classList.remove('active');
                 };
             } else {
                 els.mic.style.display = 'none';
             }
 
             els.mic.onclick = () => {
-                if (!state.recognition) {
-                    alert('Voice recognition not supported in this browser.\n\nSupported browsers:\n✓ Chrome\n✓ Edge\n✓ Safari');
-                    return;
-                }
-                
-                if (els.mic.classList.contains('active')) {
-                    try {
-                        state.recognition.stop();
-                    } catch(e) {
-                        console.log('Stop error:', e);
-                    }
-                } else {
-                    try {
-                        state.recognition.start();
-                    } catch(e) {
-                        if (e.message.includes('already started')) {
-                            state.recognition.stop();
-                            setTimeout(() => {
-                                state.recognition.start();
-                            }, 100);
-                        } else {
-                            console.error('Recognition start error:', e);
-                            alert('Microphone access denied or not available.\n\nPlease:\n1. Allow microphone access\n2. Use HTTPS or localhost\n3. Check browser permissions');
-                        }
-                    }
-                }
+                if (!state.recognition) return;
+                els.mic.classList.contains('active') ? state.recognition.stop() : state.recognition.start();
             };
 
+            // Mute
             els.mute.onclick = () => {
                 state.muted = !state.muted;
                 els.mute.innerHTML = state.muted ? '🔇 Muted' : '🔊 Speaking';
                 els.mute.classList.toggle('active', !state.muted);
-                
                 if (state.muted) {
                     speechSynthesis.cancel();
                     stop();
-                } else {
-                    const unlock = new SpeechSynthesisUtterance(' ');
-                    unlock.volume = 0;
-                    unlock.rate = 10;
-                    speechSynthesis.speak(unlock);
-                    state.ttsUnlocked = true;
                 }
             };
 
+            // Send
             els.send.onclick = send;
-            
             els.input.onkeydown = e => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -765,130 +623,100 @@
                 }
             };
 
-            document.querySelectorAll('.suggestion-btn').forEach(btn => {
-                btn.onclick = () => {
-                    els.input.value = btn.getAttribute('data-msg');
+            document.querySelectorAll('.suggestion-btn').forEach(b =>
+                b.onclick = () => {
+                    els.input.value = b.dataset.msg;
                     send();
-                };
-            });
+                }
+            );
 
             async function send() {
                 const txt = els.input.value.trim();
                 if (!txt) return;
 
-                if (!state.muted && speechSynthesis && !state.ttsUnlocked) {
-                    const warmup = new SpeechSynthesisUtterance(' ');
-                    warmup.volume = 0;
-                    warmup.rate = 10;
-                    speechSynthesis.speak(warmup);
-                    state.ttsUnlocked = true;
-                }
+                const w = els.messages.querySelector('.welcome');
+                if (w) w.remove();
 
-                const welcome = els.messages.querySelector('.welcome');
-                if (welcome) welcome.remove();
-
-                addMessage(txt, true);
+                add(txt, true);
                 els.input.value = '';
                 els.send.disabled = true;
-                showTyping();
+                typing(true);
 
                 try {
                     const res = await fetch(API, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'creepy': '1234'
-                        },
+                        headers: { 'Content-Type': 'application/json', 'creepy': '1234' },
                         body: JSON.stringify({ message: txt })
                     });
 
-                    hideTyping();
-                    
-                    if (!res.ok) throw new Error('API error');
+                    typing(false);
+                    if (!res.ok) throw new Error();
                     
                     const data = await res.json();
                     const reply = data?.output?.trim() || '';
                     
-                    addMessage(reply, false);
-                    
-                    if (!state.muted && reply) {
-                        speak(reply);
-                    }
-                } catch (error) {
-                    hideTyping();
-                    addMessage('Sorry, I encountered an error.', false);
+                    add(reply, false);
+                    if (!state.muted && reply) speak(reply);
+                } catch {
+                    typing(false);
+                    add('Sorry, I encountered an error.', false);
                 } finally {
                     els.send.disabled = false;
                 }
             }
 
-            function addMessage(text, isUser) {
-                const msg = document.createElement('div');
-                msg.className = 'message' + (isUser ? ' user' : '');
-                
-                const bubble = document.createElement('div');
-                bubble.className = 'message-bubble';
-                
-                if (isUser) {
-                    bubble.textContent = text;
-                } else {
-                    // Render markdown for bot responses
-                    bubble.innerHTML = marked.parse(text);
+            function add(text, user) {
+                const m = document.createElement('div');
+                m.className = 'message' + (user ? ' user' : '');
+                const b = document.createElement('div');
+                b.className = 'message-bubble';
+                b.textContent = text;
+                m.appendChild(b);
+                els.messages.appendChild(m);
+                els.messages.scrollTop = els.messages.scrollHeight;
+            }
+
+            function typing(show) {
+                const t = els.messages.querySelector('.typing-msg');
+                if (t) t.remove();
+                if (show) {
+                    const el = document.createElement('div');
+                    el.className = 'message typing-msg';
+                    el.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+                    els.messages.appendChild(el);
+                    els.messages.scrollTop = els.messages.scrollHeight;
                 }
-                
-                msg.appendChild(bubble);
-                els.messages.appendChild(msg);
-                els.messages.scrollTop = els.messages.scrollHeight;
-            }
-
-            function showTyping() {
-                const typing = document.createElement('div');
-                typing.className = 'message typing-msg';
-                typing.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
-                els.messages.appendChild(typing);
-                els.messages.scrollTop = els.messages.scrollHeight;
-            }
-
-            function hideTyping() {
-                const typing = els.messages.querySelector('.typing-msg');
-                if (typing) typing.remove();
             }
 
             function speak(text) {
-                const clean = text
-                    .replace(/https?:\/\/\S+/g, '')
-                    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-                    .replace(/[*_`~#\[\]()]/g, '')
-                    .replace(/\s+/g, ' ')
-                    .trim();
+                const clean = text.replace(/https?:\/\/\S+/g, '').replace(/[*_`~#\[\]()]/g, '').replace(/\s+/g, ' ').trim();
                 
                 speechSynthesis.cancel();
                 
-                setTimeout(() => {
-                    const utterance = new SpeechSynthesisUtterance(clean);
-                    if (state.voice) utterance.voice = state.voice;
-                    utterance.rate = 1;
-                    utterance.pitch = 1;
-                    utterance.volume = 1;
-                    
-                    utterance.onstart = play;
-                    utterance.onend = stop;
-                    utterance.onerror = stop;
-                    
-                    speechSynthesis.speak(utterance);
-                    
-                    let checks = 0;
-                    const monitor = setInterval(() => {
-                        if (speechSynthesis.speaking && !state.speaking) {
-                            state.speaking = true;
-                            play();
-                        } else if (!speechSynthesis.speaking && state.speaking) {
-                            state.speaking = false;
-                            stop();
-                            clearInterval(monitor);
-                        }
-                        if (++checks > 100) clearInterval(monitor);
-                    }, 100);
+                const u = new SpeechSynthesisUtterance(clean);
+                if (state.voice) u.voice = state.voice;
+                u.rate = 1;
+                u.pitch = 1;
+                u.volume = 1;
+                
+                u.onstart = play;
+                u.onend = stop;
+                u.onerror = stop;
+                
+                speechSynthesis.speak(u);
+                
+                // Monitor speaking state
+                let checks = 0;
+                const monitor = setInterval(() => {
+                    if (speechSynthesis.speaking && !state.speaking) {
+                        state.speaking = true;
+                        play();
+                    } else if (!speechSynthesis.speaking && state.speaking) {
+                        state.speaking = false;
+                        stop();
+                        clearInterval(monitor);
+                    }
+                    if (++checks > 100) clearInterval(monitor);
                 }, 100);
             }
 
@@ -896,9 +724,11 @@
                 state.speaking = true;
                 els.wrapper?.classList.add('speaking');
                 
-                if (state.animation) {
-                    state.animation.loop = true;
-                    state.animation.play();
+                if (els.avatar) {
+                    try {
+                        els.avatar.setAttribute('loop', 'true');
+                        els.avatar.play();
+                    } catch(e) {}
                 }
             }
 
@@ -906,9 +736,11 @@
                 state.speaking = false;
                 els.wrapper?.classList.remove('speaking');
                 
-                if (state.animation) {
-                    state.animation.loop = false;
-                    state.animation.stop();
+                if (els.avatar) {
+                    try {
+                        els.avatar.removeAttribute('loop');
+                        els.avatar.stop();
+                    } catch(e) {}
                 }
             }
         })();
